@@ -1,0 +1,54 @@
+project:
+  name: stylegan2-ada
+  syncFilters:
+    - exclude:
+        - .git/*
+        - .idea/*
+        - '*/__pycache__/*'
+        - out/*
+
+containers:
+  - &DEFAULT_CONTAINER
+    projectDir: /workspace/project
+    file: docker/Dockerfile.spotty-gpu
+    volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+    env:
+      PYTHONPATH: /workspace/project
+    ports:
+      # tensorboard
+      - containerPort: 6006
+        hostPort: 6006
+      # jupyter
+      - containerPort: 8888
+        hostPort: 8888
+
+instances:
+  - name: aws-1
+    provider: aws
+    parameters:
+      region: us-east-1
+      instanceType: p3.2xlarge
+#      instanceType: g4dn.xlarge
+      spotInstance: false
+      ports: [6006, 6007, 8888]
+      volumes:
+        - name: workspace
+          parameters:
+            size: 500
+
+scripts:
+  tensorboard: |
+    tensorboard --port 6006 --logdir results/
+
+  jupyter: |
+    CUDA_VISIBLE_DEVICES="" jupyter notebook --allow-root --ip 0.0.0.0 --notebook-dir=/workspace/project
+
+  projector-ffhq: |
+    python projector.py --outdir={{OUTPUT_DIR}} --target={{TARGET}} \
+        --network=https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada/pretrained/ffhq.pkl
+
+  projector-metfaces: |
+    python projector.py --outdir={{OUTPUT_DIR}} --target={{TARGET}} \
+        --network=https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada/pretrained/metfaces.pkl

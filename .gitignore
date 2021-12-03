@@ -1,0 +1,7 @@
+__pycache__/
+.idea/
+out/
+.DS_Store
+training-runs
+results
+*.pkl
